@@ -1,0 +1,38 @@
+{
+  "format": 1,
+  "name": "Wispy's Plugins",
+  "description": "Valenced plugins by Wispy.",
+  "plugins": {
+    "wispy.role-color-everywhere": {
+      "name": "Role Color Everywhere",
+      "description": "Shows the top role color in mentions, member list role headers, voice channel names, and optionally message text.",
+      "author": "Wispy (https://github.com/VVispy \"GitHub\")",
+      "contributors": [
+        "KingFish",
+        "lewisakura",
+        "AutumnVN",
+        "Kyuuhachi",
+        "jamesbt365"
+      ],
+      "icon": "PaintPaletteIcon",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.0.0.zip",
+          "sha256": "49004240d6f894a35a04c6a478615e4ac46585478470f5edb480eb183b9ac65c",
+          "size": 4248,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    }
+  }
+}
