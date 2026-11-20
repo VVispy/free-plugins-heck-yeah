@@ -1,7 +1,13 @@
 import { instead } from '@valenced/patcher'
 import { ReactJSXRuntime } from '@valenced/react'
-import { cloneElement, isValidElement } from 'react'
-import type { ElementType, FC, ReactElement, ReactNode } from 'react'
+import { cloneElement, isValidElement, memo } from 'react'
+import type {
+	ComponentType,
+	ElementType,
+	FC,
+	ReactElement,
+	ReactNode,
+} from 'react'
 
 type JSXFactory = (type: unknown, props: unknown, key?: unknown) => unknown
 
@@ -122,28 +128,34 @@ export function replaceElement(
 		: cloneElement(tree, undefined, result)
 }
 
-const wrapped = new WeakMap<object, FC<any>>()
+const wrapped = new WeakMap<object, WeakMap<object, ComponentType<any>>>()
 
 /**
  * Wraps a function or memo component to transform its output.
- * The wrapper is cached, so React never remounts it.
+ * The wrapper is cached per transform, so React never remounts it. Memo components stay memoized.
  */
 export function wrapComponent<P extends object>(
 	type: unknown,
 	transform: (tree: ReactNode, props: P) => ReactNode,
-): FC<P> | undefined {
+): ComponentType<P> | undefined {
 	if (typeof type !== 'function' && (typeof type !== 'object' || type === null))
 		return
 
-	const render =
-		typeof type === 'function' ? type : (type as { type?: unknown }).type
+	const memoized = typeof type === 'object'
+	const render = memoized ? (type as { type?: unknown }).type : type
 	if (typeof render !== 'function') return
 
-	let Wrapped = wrapped.get(type)
+	let cache = wrapped.get(transform)
+	if (!cache) wrapped.set(transform, (cache = new WeakMap()))
+
+	let Wrapped = cache.get(type)
 	if (!Wrapped) {
-		Wrapped = (props: P) =>
+		const Render = (props: P) =>
 			transform((render as FC<P>)(props) as ReactNode, props)
-		wrapped.set(type, Wrapped)
+		Wrapped = memoized
+			? memo(Render, (type as { compare?: Parameters<typeof memo>[1] }).compare)
+			: Render
+		cache.set(type, Wrapped)
 	}
 
 	return Wrapped

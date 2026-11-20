@@ -8,6 +8,9 @@ export interface Settings {
 	chatMentions: boolean
 	memberList: boolean
 	voiceUsers: boolean
+	typingIndicator: boolean
+	/** Gradients for roles with enhanced role colors */
+	gradients: boolean
 	colorChatMessages: boolean
 	/** Percentage of the role color mixed into message text */
 	messageSaturation: number
@@ -17,6 +20,8 @@ export const DefaultSettings: Settings = {
 	chatMentions: true,
 	memberList: true,
 	voiceUsers: true,
+	typingIndicator: true,
+	gradients: true,
 	colorChatMessages: false,
 	messageSaturation: 30,
 }
@@ -34,20 +39,49 @@ export function getSetting<K extends keyof Settings>(key: K): Settings[K] {
 	)
 }
 
-export interface Role {
+export interface ColorStrings {
+	primaryColor: string
+	secondaryColor?: string | null
+	tertiaryColor?: string | null
+}
+
+/** Guild member or role */
+export interface Colored {
+	colorString?: string | null
+	colorStrings?: ColorStrings | null
+}
+
+export interface Role extends Colored {
 	id: string
 	name: string
-	colorString?: string | null
+}
+
+export interface RoleColors {
+	/** Solid color, the primary color of a gradient */
+	color: string
+	/** Set for enhanced role colors when gradients are enabled */
+	gradient?: ColorStrings & { secondaryColor: string }
 }
 
 type Store<T> = DiscordModules.Flux.Store<T>
 
+const EnhancedRoleColors = 'ENHANCED_ROLE_COLORS'
+
+const getGuildStore = () =>
+	Stores.GuildStore as Store<{
+		getGuild(id: string):
+			| {
+					features?: {
+						has?(feature: string): boolean
+						includes?(feature: string): boolean
+					}
+			  }
+			| undefined
+	}>
+
 const getGuildMemberStore = () =>
 	Stores.GuildMemberStore as Store<{
-		getMember(
-			guildId: string,
-			userId: string,
-		): { colorString?: string | null } | null | undefined
+		getMember(guildId: string, userId: string): Colored | null | undefined
 	}>
 
 const getGuildRoleStore = () =>
@@ -58,15 +92,55 @@ const getGuildRoleStore = () =>
 		  }>
 		| undefined
 
-const getChannelStore = () =>
-	Stores.ChannelStore as Store<{
-		getChannel(id: string): { guild_id?: string | null } | undefined
-	}>
-
 const getSelectedGuildStore = () =>
 	Stores.SelectedGuildStore as Store<{
 		getGuildId(): string | null | undefined
 	}>
+
+function hasEnhancedRoleColors(guildId: string) {
+	const features = getGuildStore().getGuild(guildId)?.features
+	return !!(
+		features?.has?.(EnhancedRoleColors) ??
+		features?.includes?.(EnhancedRoleColors)
+	)
+}
+
+/**
+ * Returns the colors of a guild member or role.
+ */
+export function getColors(
+	guildId: string | null | undefined,
+	source: Colored | null | undefined,
+): RoleColors | undefined {
+	const color = source?.colorString
+	if (!color) return
+
+	const strings = source.colorStrings
+	if (
+		!guildId ||
+		!strings?.secondaryColor ||
+		!getSetting('gradients') ||
+		!hasEnhancedRoleColors(guildId)
+	)
+		return { color }
+
+	return { color, gradient: strings as RoleColors['gradient'] }
+}
+
+export function getMember(
+	guildId: string | null | undefined,
+	userId: string | null | undefined,
+) {
+	if (!guildId || !userId) return
+	return getGuildMemberStore().getMember(guildId, userId) ?? undefined
+}
+
+export function getMemberColors(
+	guildId: string | null | undefined,
+	userId: string | null | undefined,
+) {
+	return getColors(guildId, getMember(guildId, userId))
+}
 
 /**
  * Returns the top role color of a guild member as a hex string.
@@ -75,17 +149,7 @@ export function getMemberColor(
 	guildId: string | null | undefined,
 	userId: string | null | undefined,
 ) {
-	if (!guildId || !userId) return
-	return (
-		getGuildMemberStore().getMember(guildId, userId)?.colorString || undefined
-	)
-}
-
-export function getGuildIdOfChannel(channelId: string | null | undefined) {
-	return (
-		(channelId && getChannelStore().getChannel(channelId)?.guild_id) ||
-		undefined
-	)
+	return getMember(guildId, userId)?.colorString || undefined
 }
 
 export function getSelectedGuildId() {

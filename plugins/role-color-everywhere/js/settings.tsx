@@ -46,6 +46,24 @@ export default function SettingsComponent({
 							value={settings.voiceUsers}
 							onValueChange={voiceUsers => storage.set({ voiceUsers })}
 						/>
+						<TableSwitchRow
+							icon={<TableRowAssetIcon name="KeyboardIcon" />}
+							label="Typing indicator"
+							subLabel="Color the names of people who are typing."
+							value={settings.typingIndicator}
+							onValueChange={typingIndicator =>
+								storage.set({ typingIndicator })
+							}
+						/>
+					</TableRowGroup>
+					<TableRowGroup title="Style" hasIcons>
+						<TableSwitchRow
+							icon={<TableRowAssetIcon name="StarIcon" />}
+							label="Gradient role colors"
+							subLabel="Show gradients for roles with enhanced role colors. When off, the primary color is used."
+							value={settings.gradients}
+							onValueChange={gradients => storage.set({ gradients })}
+						/>
 					</TableRowGroup>
 					<TableRowGroup title="Messages" hasIcons>
 						<TableSwitchRow

@@ -1,8 +1,8 @@
 import { beforeJSX } from '@valenced/react/jsx-runtime'
-import { Text } from 'react-native'
-import { onComponentType } from './react'
-import { getRoles, getSelectedGuildId, getSetting } from './shared'
-import type { FC } from 'react'
+import { paintText } from './gradient'
+import { onComponentType, wrapComponent } from './react'
+import { getColors, getRoles, getSelectedGuildId, getSetting } from './shared'
+import type { FC, ReactNode } from 'react'
 import type { Role } from './shared'
 
 interface UserSectionProps {
@@ -16,27 +16,36 @@ const MemberCount = /\s*[—–-]\s*[\d\s.,\u00a0\u202f]+$/
 /**
  * Colors the member list role headers.
  * Only the formatted title reaches the header, so the role is matched by name.
+ *
+ * <UserSectionInner title="Moderator — 5">
+ *   <View>
+ *     <Text variant="text-md/medium" color="text-subtle">Moderator — 5</Text>
  */
 export function patchMemberList(reportError: (e: unknown) => void) {
 	let unpatch: (() => unknown) | undefined
 
+	const transform = (tree: ReactNode, props: UserSectionProps) => {
+		if (typeof props.title !== 'string') return tree
+
+		try {
+			const guildId = props.guildId ?? getSelectedGuildId()
+			const colors =
+				guildId && getColors(guildId, findRole(guildId, props.title))
+			return colors ? paintText(tree, colors) : tree
+		} catch (e) {
+			reportError(e)
+			return tree
+		}
+	}
+
 	const stop = onComponentType('UserSectionInner', type => {
 		unpatch = beforeJSX(type as FC<UserSectionProps>, args => {
-			const [, props] = args
-			if (!getSetting('memberList') || typeof props?.title !== 'string')
-				return args
+			if (!getSetting('memberList')) return args
 
-			try {
-				const guildId = props.guildId ?? getSelectedGuildId()
-				const color = guildId && findRole(guildId, props.title)?.colorString
-				if (!color) return args
-
-				const title = <Text style={{ color }}>{props.title}</Text>
-				return [args[0], { ...props, title }, ...args.slice(2)] as typeof args
-			} catch (e) {
-				reportError(e)
-				return args
-			}
+			const Wrapped = wrapComponent<UserSectionProps>(type, transform)
+			return Wrapped
+				? ([Wrapped, ...args.slice(1)] as unknown as typeof args)
+				: args
 		})
 	})
 

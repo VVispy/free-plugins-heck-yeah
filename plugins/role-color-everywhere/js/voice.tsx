@@ -1,93 +1,47 @@
-import { getModules } from '@valenced/modules/finders'
-import { withName } from '@valenced/modules/finders/filters'
-import { instead } from '@valenced/patcher'
-import { cloneElement, isValidElement } from 'react'
-import { componentName, replaceElement, wrapComponent } from './react'
-import { getGuildIdOfChannel, getMemberColor, getSetting } from './shared'
+import { beforeJSX } from '@valenced/react/jsx-runtime'
+import { paintText } from './gradient'
+import { onComponentType, wrapComponent } from './react'
+import { getColors, getSetting } from './shared'
 import type { FC, ReactNode } from 'react'
+import type { Colored } from './shared'
 
-interface VoiceUserProps {
-	member?: { colorString?: string | null } | null
-	user?: { id: string } | null
+interface VoiceUserNameProps {
 	guildId?: string | null
-	channel?: { id: string; guild_id?: string | null } | null
+	member?: Colored | null
 }
-
-// Read by the wrapped inner component only
-const ColorProp = '__roleColorEverywhere'
-
-type InnerProps = { [ColorProp]?: string }
 
 /**
- * <VoiceUserConnected member={...} user={...}>
- *   <Inner>
- *     ...
- *       <VoiceUserNameItem color={...} />
+ * <VoiceUserItem member={...}>
+ *   <VoiceUserNameItem member={...} guildId={...} color="redesign-channel-name-text">
+ *     <View>
+ *       <Text variant="text-sm/medium" color="redesign-channel-name-text">name</Text>
  */
 export function patchVoiceUsers(reportError: (e: unknown) => void) {
-	const unpatches: (() => unknown)[] = []
+	let unpatch: (() => unknown) | undefined
 
-	const unsubscribe = getModules(
-		withName<FC<VoiceUserProps>>('VoiceUserConnected'),
-		module => {
-			const target = module as unknown as { default?: FC<VoiceUserProps> }
-			if (typeof target.default !== 'function') return
+	const transform = (tree: ReactNode, props: VoiceUserNameProps) => {
+		try {
+			const colors = getColors(props.guildId, props.member)
+			return colors ? paintText(tree, colors) : tree
+		} catch (e) {
+			reportError(e)
+			return tree
+		}
+	}
 
-			unpatches.push(
-				instead(
-					target as { default: FC<VoiceUserProps> },
-					'default',
-					function (args, original) {
-						const tree = Reflect.apply(original, this, args) as ReactNode
-						if (!getSetting('voiceUsers') || !isValidElement<InnerProps>(tree))
-							return tree
+	const stop = onComponentType('VoiceUserNameItem', type => {
+		unpatch = beforeJSX(type as FC<VoiceUserNameProps>, args => {
+			if (!getSetting('voiceUsers')) return args
 
-						try {
-							const [props] = args
-							const color =
-								props?.member?.colorString ||
-								getMemberColor(
-									props?.guildId ??
-										props?.channel?.guild_id ??
-										getGuildIdOfChannel(props?.channel?.id),
-									props?.user?.id,
-								)
-							if (!color) return tree
-
-							const Inner = wrapComponent<InnerProps>(tree.type, colorName)
-							if (!Inner) return tree
-
-							return (
-								<Inner
-									key={tree.key}
-									{...tree.props}
-									{...{ [ColorProp]: color }}
-								/>
-							)
-						} catch (e) {
-							reportError(e)
-							return tree
-						}
-					},
-				),
-			)
-		},
-		{ returnNamespace: true },
-	)
+			const Wrapped = wrapComponent<VoiceUserNameProps>(type, transform)
+			return Wrapped
+				? ([Wrapped, ...args.slice(1)] as unknown as typeof args)
+				: args
+		})
+	})
 
 	return () => {
-		unsubscribe()
-		for (const unpatch of unpatches) unpatch()
+		stop()
+		unpatch?.()
 	}
-}
-
-function colorName(tree: ReactNode, props: InnerProps) {
-	const color = props[ColorProp]
-	if (!color) return tree
-
-	return replaceElement(
-		tree,
-		element => componentName(element.type) === 'VoiceUserNameItem',
-		element => cloneElement(element, { color }),
-	)
 }

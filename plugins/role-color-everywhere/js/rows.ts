@@ -4,10 +4,12 @@ import { instead } from '@valenced/patcher'
 import { getErrorStack } from '@valenced/utils/error'
 import {
 	getMemberColor,
+	getMemberColors,
 	getSetting,
 	hexToInt,
 	mixWithTextColor,
 } from './shared'
+import type { RoleColors } from './shared'
 
 interface GenerateArgs {
 	message?: { state?: string }
@@ -41,8 +43,16 @@ interface ContentNode {
 	userId?: string
 	guildId?: string | null
 	roleColor?: number
+	roleColors?: NativeRoleColors
 	color?: number
 	colorString?: string
+}
+
+/** Gradient stops as RGB integers, like Discord's own role mentions */
+interface NativeRoleColors {
+	primaryColor: number
+	secondaryColor: number
+	tertiaryColor?: number
 }
 
 const MessageRowType = 1
@@ -139,11 +149,19 @@ function withColor(node: ContentNode, guildId: string): ContentNode {
 	if (node.type === 'mention') {
 		if (!node.userId) return node
 
-		const colorString = getMemberColor(node.guildId ?? guildId, node.userId)
-		if (!colorString) return node
+		const colors = getMemberColors(node.guildId ?? guildId, node.userId)
+		if (!colors) return node
 
-		const color = hexToInt(colorString)
-		return { ...node, roleColor: color, color, colorString }
+		const color = hexToInt(colors.color)
+		const updated: ContentNode = {
+			...node,
+			roleColor: color,
+			color,
+			colorString: colors.color,
+		}
+		if (colors.gradient) updated.roleColors = toNativeColors(colors.gradient)
+
+		return updated
 	}
 
 	// Formatting nodes can hold mentions too
@@ -159,4 +177,17 @@ function withColor(node: ContentNode, guildId: string): ContentNode {
 	}
 
 	return node
+}
+
+function toNativeColors({
+	primaryColor,
+	secondaryColor,
+	tertiaryColor,
+}: NonNullable<RoleColors['gradient']>): NativeRoleColors {
+	const colors: NativeRoleColors = {
+		primaryColor: hexToInt(primaryColor),
+		secondaryColor: hexToInt(secondaryColor),
+	}
+	if (tertiaryColor) colors.tertiaryColor = hexToInt(tertiaryColor)
+	return colors
 }
