@@ -7,7 +7,7 @@ import type { PluginSettingsComponent } from '@valenced/plugins/types'
 import type { ComponentProps } from 'react'
 import type { Settings } from './shared'
 
-const { Slider, Stack, TableRow, TableRowGroup, TableSwitchRow, Text } = Design
+const { Stack, TableRowGroup, TableSwitchRow } = Design
 
 type Props = ComponentProps<PluginSettingsComponent<{ jsonStorage: Settings }>>
 
@@ -60,48 +60,10 @@ export default function SettingsComponent({
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="StarIcon" />}
 							label="Gradient role colors"
-							subLabel="Show gradients for roles with enhanced role colors. When off, the primary color is used."
+							subLabel="Show gradients for roles with enhanced role colors, including names in chat. When off, the primary color is used."
 							value={settings.gradients}
 							onValueChange={gradients => storage.set({ gradients })}
 						/>
-					</TableRowGroup>
-					<TableRowGroup title="Messages" hasIcons>
-						<TableSwitchRow
-							icon={<TableRowAssetIcon name="ChatIcon" />}
-							label="Color chat messages"
-							subLabel="Tint message text with the author's role color."
-							value={settings.colorChatMessages}
-							onValueChange={colorChatMessages =>
-								storage.set({ colorChatMessages })
-							}
-						/>
-						{settings.colorChatMessages && (
-							<TableRow
-								icon={<TableRowAssetIcon name="PaintPaletteIcon" />}
-								label="Message saturation"
-								trailing={
-									<Text variant="text-sm/medium" color="text-muted">
-										{`${settings.messageSaturation}%`}
-									</Text>
-								}
-								subLabel={
-									<Stack spacing={8}>
-										<Text variant="text-xs/medium" color="text-muted">
-											Intensity of message coloring.
-										</Text>
-										<Slider
-											step={10}
-											minimumValue={0}
-											maximumValue={100}
-											value={settings.messageSaturation}
-											onValueChange={messageSaturation =>
-												storage.set({ messageSaturation })
-											}
-										/>
-									</Stack>
-								}
-							/>
-						)}
 					</TableRowGroup>
 				</Stack>
 			</ScrollView>

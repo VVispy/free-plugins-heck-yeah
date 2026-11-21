@@ -1,23 +1,13 @@
 import { getModules } from '@valenced/modules/finders'
 import { withName } from '@valenced/modules/finders/filters'
-import { instead } from '@valenced/patcher'
+import { after } from '@valenced/patcher'
 import { getErrorStack } from '@valenced/utils/error'
-import {
-	getMemberColor,
-	getMemberColors,
-	getSetting,
-	hexToInt,
-	mixWithTextColor,
-} from './shared'
+import { getMemberColors, getSetting, hexToInt } from './shared'
 import type { RoleColors } from './shared'
-
-interface GenerateArgs {
-	message?: { state?: string }
-}
 
 interface RowManager {
 	prototype: {
-		generate(args: GenerateArgs): MessageRow
+		generate(args: unknown): MessageRow
 	}
 }
 
@@ -28,11 +18,10 @@ interface MessageRow {
 
 interface RowMessage {
 	guildId?: string | null
-	authorId?: string
 	content?: ContentNode[]
 	embeds?: { description?: unknown }[]
-	/** Text & guild tag color */
-	textColor?: number
+	/** Gradient of the author's name */
+	roleColors?: NativeRoleColors | null
 	referencedMessage?: { message?: RowMessage }
 }
 
@@ -43,7 +32,7 @@ interface ContentNode {
 	userId?: string
 	guildId?: string | null
 	roleColor?: number
-	roleColors?: NativeRoleColors
+	roleColors?: NativeRoleColors | null
 	color?: number
 	colorString?: string
 }
@@ -55,8 +44,15 @@ interface NativeRoleColors {
 	tertiaryColor?: number
 }
 
+interface Options {
+	guildId: string
+	/** Colors user mentions */
+	color: boolean
+	/** Removes gradients Discord adds itself */
+	strip: boolean
+}
+
 const MessageRowType = 1
-const SendFailedState = 'SEND_FAILED'
 
 export function patchRows(reportError: (e: unknown) => void) {
 	const unpatches: (() => unknown)[] = []
@@ -66,13 +62,25 @@ export function patchRows(reportError: (e: unknown) => void) {
 		withName<RowManager>('RowManager'),
 		({ prototype }) => {
 			unpatches.push(
-				instead(prototype, 'generate', function (args, original) {
-					const row = Reflect.apply(original, this, args) as MessageRow
+				after(prototype, 'generate', row => {
 					const message = row?.type === MessageRowType ? row.message : undefined
-					if (!message) return row
+					if (!message?.guildId) return row
 
 					try {
-						styleMessage(message, args[0]?.message?.state)
+						const options: Options = {
+							guildId: message.guildId,
+							color: getSetting('chatMentions'),
+							strip: !getSetting('gradients'),
+						}
+
+						styleMessage(message, options)
+
+						const reply = message.referencedMessage?.message
+						if (reply)
+							styleMessage(reply, {
+								...options,
+								guildId: reply.guildId ?? options.guildId,
+							})
 					} catch (e) {
 						reportError(`Failed to color message row: ${getErrorStack(e)}`)
 					}
@@ -89,38 +97,18 @@ export function patchRows(reportError: (e: unknown) => void) {
 	}
 }
 
-function styleMessage(message: RowMessage, state: string | undefined) {
-	const { guildId } = message
-	if (!guildId) return
+function styleMessage(message: RowMessage, options: Options) {
+	if (options.strip && message.roleColors) message.roleColors = null
+	if (!options.color && !options.strip) return
 
-	if (getSetting('chatMentions')) {
-		colorMentionsIn(message, guildId)
-
-		const reply = message.referencedMessage?.message
-		if (reply) colorMentionsIn(reply, reply.guildId ?? guildId)
-	}
-
-	// Failed messages stay distinguishable
-	if (!getSetting('colorChatMessages') || state === SendFailedState) return
-
-	const saturation = getSetting('messageSaturation')
-	const color = saturation > 0 && getMemberColor(guildId, message.authorId)
-	if (!color) return
-
-	const textColor = mixWithTextColor(color, saturation)
-	if (textColor !== undefined) message.textColor = textColor
-}
-
-function colorMentionsIn(message: RowMessage, guildId: string) {
-	if (message.content) message.content = withColors(message.content, guildId)
-
+	if (message.content) message.content = withColors(message.content, options)
 	if (!message.embeds?.length) return
 
 	let changed = false
 	const embeds = message.embeds.map(embed => {
 		if (!Array.isArray(embed?.description)) return embed
 
-		const description = withColors(embed.description, guildId)
+		const description = withColors(embed.description, options)
 		if (description === embed.description) return embed
 
 		changed = true
@@ -131,11 +119,11 @@ function colorMentionsIn(message: RowMessage, guildId: string) {
 }
 
 // Discord caches parsed nodes, so they're copied
-function withColors(nodes: ContentNode[], guildId: string): ContentNode[] {
+function withColors(nodes: ContentNode[], options: Options): ContentNode[] {
 	let changed = false
 
 	const result = nodes.map(node => {
-		const updated = withColor(node, guildId)
+		const updated = withColor(node, options)
 		if (updated !== node) changed = true
 		return updated
 	})
@@ -143,35 +131,42 @@ function withColors(nodes: ContentNode[], guildId: string): ContentNode[] {
 	return changed ? result : nodes
 }
 
-function withColor(node: ContentNode, guildId: string): ContentNode {
+function withColor(node: ContentNode, options: Options): ContentNode {
 	if (!node || typeof node !== 'object') return node
 
 	if (node.type === 'mention') {
-		if (!node.userId) return node
+		if (options.color && node.userId) {
+			const colors = getMemberColors(
+				node.guildId ?? options.guildId,
+				node.userId,
+			)
 
-		const colors = getMemberColors(node.guildId ?? guildId, node.userId)
-		if (!colors) return node
-
-		const color = hexToInt(colors.color)
-		const updated: ContentNode = {
-			...node,
-			roleColor: color,
-			color,
-			colorString: colors.color,
+			if (colors) {
+				const color = hexToInt(colors.color)
+				node = {
+					...node,
+					roleColor: color,
+					color,
+					colorString: colors.color,
+				}
+				if (colors.gradient) node.roleColors = toNativeColors(colors.gradient)
+			}
 		}
-		if (colors.gradient) updated.roleColors = toNativeColors(colors.gradient)
 
-		return updated
+		// Role mentions come with Discord's own gradient
+		if (options.strip && node.roleColors) node = { ...node, roleColors: null }
+
+		return node
 	}
 
 	// Formatting nodes can hold mentions too
 	if (Array.isArray(node.content)) {
-		const content = withColors(node.content, guildId)
+		const content = withColors(node.content, options)
 		if (content !== node.content) node = { ...node, content }
 	}
 
 	if (Array.isArray(node.items)) {
-		const items = node.items.map(item => withColors(item, guildId))
+		const items = node.items.map(item => withColors(item, options))
 		if (items.some((item, i) => item !== node.items![i]))
 			node = { ...node, items }
 	}

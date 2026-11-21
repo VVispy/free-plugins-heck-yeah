@@ -1,8 +1,6 @@
-import { beforeJSX } from '@valenced/react/jsx-runtime'
 import { paintText } from './gradient'
-import { onComponentType, wrapComponent } from './react'
+import { transformComponent } from './react'
 import { getColors, getRoles, getSelectedGuildId, getSetting } from './shared'
-import type { FC, ReactNode } from 'react'
 import type { Role } from './shared'
 
 interface UserSectionProps {
@@ -22,37 +20,17 @@ const MemberCount = /\s*[—–-]\s*[\d\s.,\u00a0\u202f]+$/
  *     <Text variant="text-md/medium" color="text-subtle">Moderator — 5</Text>
  */
 export function patchMemberList(reportError: (e: unknown) => void) {
-	let unpatch: (() => unknown) | undefined
+	return transformComponent<UserSectionProps>(
+		'UserSectionInner',
+		() => getSetting('memberList'),
+		(tree, { title, guildId = getSelectedGuildId() }) => {
+			if (typeof title !== 'string' || !guildId) return tree
 
-	const transform = (tree: ReactNode, props: UserSectionProps) => {
-		if (typeof props.title !== 'string') return tree
-
-		try {
-			const guildId = props.guildId ?? getSelectedGuildId()
-			const colors =
-				guildId && getColors(guildId, findRole(guildId, props.title))
+			const colors = getColors(guildId, findRole(guildId, title))
 			return colors ? paintText(tree, colors) : tree
-		} catch (e) {
-			reportError(e)
-			return tree
-		}
-	}
-
-	const stop = onComponentType('UserSectionInner', type => {
-		unpatch = beforeJSX(type as FC<UserSectionProps>, args => {
-			if (!getSetting('memberList')) return args
-
-			const Wrapped = wrapComponent<UserSectionProps>(type, transform)
-			return Wrapped
-				? ([Wrapped, ...args.slice(1)] as unknown as typeof args)
-				: args
-		})
-	})
-
-	return () => {
-		stop()
-		unpatch?.()
-	}
+		},
+		reportError,
+	)
 }
 
 function findRole(guildId: string, title: string): Role | undefined {

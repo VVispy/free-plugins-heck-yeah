@@ -1,5 +1,6 @@
 import { instead } from '@valenced/patcher'
 import { ReactJSXRuntime } from '@valenced/react'
+import { beforeJSX } from '@valenced/react/jsx-runtime'
 import { cloneElement, isValidElement, memo } from 'react'
 import type {
 	ComponentType,
@@ -159,4 +160,44 @@ export function wrapComponent<P extends object>(
 	}
 
 	return Wrapped
+}
+
+/**
+ * Transforms the output of every element of the component named `name`.
+ *
+ * @param enabled Checked per element, so a disabled transform leaves the component untouched.
+ * @returns A function to unpatch.
+ */
+export function transformComponent<P extends object>(
+	name: string,
+	enabled: () => boolean,
+	transform: (tree: ReactNode, props: P) => ReactNode,
+	reportError: (e: unknown) => void,
+) {
+	let unpatch: (() => unknown) | undefined
+
+	const safeTransform = (tree: ReactNode, props: P) => {
+		try {
+			return transform(tree, props)
+		} catch (e) {
+			reportError(e)
+			return tree
+		}
+	}
+
+	const stop = onComponentType(name, type => {
+		unpatch = beforeJSX(type as FC<P>, args => {
+			if (!enabled()) return args
+
+			const Wrapped = wrapComponent<P>(type, safeTransform)
+			return Wrapped
+				? ([Wrapped, ...args.slice(1)] as unknown as typeof args)
+				: args
+		})
+	})
+
+	return () => {
+		stop()
+		unpatch?.()
+	}
 }

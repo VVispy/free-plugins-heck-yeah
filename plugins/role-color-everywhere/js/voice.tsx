@@ -1,8 +1,8 @@
-import { beforeJSX } from '@valenced/react/jsx-runtime'
+import { cloneElement, isValidElement } from 'react'
 import { paintText } from './gradient'
-import { onComponentType, wrapComponent } from './react'
-import { getColors, getSetting } from './shared'
-import type { FC, ReactNode } from 'react'
+import { transformComponent } from './react'
+import { getColors, getMemberColors, getSetting } from './shared'
+import type { ReactNode } from 'react'
 import type { Colored } from './shared'
 
 interface VoiceUserNameProps {
@@ -10,38 +10,57 @@ interface VoiceUserNameProps {
 	member?: Colored | null
 }
 
-/**
- * <VoiceUserItem member={...}>
- *   <VoiceUserNameItem member={...} guildId={...} color="redesign-channel-name-text">
- *     <View>
- *       <Text variant="text-sm/medium" color="redesign-channel-name-text">name</Text>
- */
+interface MemberRowProps {
+	guildId?: string | null
+	user?: { id: string } | null
+}
+
+const enabled = () => getSetting('voiceUsers')
+
 export function patchVoiceUsers(reportError: (e: unknown) => void) {
-	let unpatch: (() => unknown) | undefined
+	const unpatches = [
+		/**
+		 * Channel list
+		 *
+		 * <VoiceUserNameItem member={...} guildId={...} color="redesign-channel-name-text">
+		 *   <View>
+		 *     <Text variant="text-sm/medium" color="redesign-channel-name-text">name</Text>
+		 */
+		transformComponent<VoiceUserNameProps>(
+			'VoiceUserNameItem',
+			enabled,
+			(tree, { guildId, member }) => {
+				const colors = getColors(guildId, member)
+				return colors ? paintText(tree, colors) : tree
+			},
+			reportError,
+		),
+		/**
+		 * Voice channel sheet
+		 *
+		 * <MemberRowItem user={...} guildId={...}>
+		 *   <TableRow label={<View><Text variant="text-md/semibold">name</Text></View>} />
+		 */
+		transformComponent<MemberRowProps>(
+			'MemberRowItem',
+			enabled,
+			(tree, { guildId, user }) => {
+				if (
+					!isValidElement<{ label?: ReactNode }>(tree) ||
+					tree.props.label == null
+				)
+					return tree
 
-	const transform = (tree: ReactNode, props: VoiceUserNameProps) => {
-		try {
-			const colors = getColors(props.guildId, props.member)
-			return colors ? paintText(tree, colors) : tree
-		} catch (e) {
-			reportError(e)
-			return tree
-		}
-	}
-
-	const stop = onComponentType('VoiceUserNameItem', type => {
-		unpatch = beforeJSX(type as FC<VoiceUserNameProps>, args => {
-			if (!getSetting('voiceUsers')) return args
-
-			const Wrapped = wrapComponent<VoiceUserNameProps>(type, transform)
-			return Wrapped
-				? ([Wrapped, ...args.slice(1)] as unknown as typeof args)
-				: args
-		})
-	})
+				const colors = getMemberColors(guildId, user?.id)
+				return colors
+					? cloneElement(tree, { label: paintText(tree.props.label, colors) })
+					: tree
+			},
+			reportError,
+		),
+	]
 
 	return () => {
-		stop()
-		unpatch?.()
+		for (const unpatch of unpatches) unpatch()
 	}
 }
