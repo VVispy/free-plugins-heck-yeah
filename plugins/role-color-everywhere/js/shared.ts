@@ -149,6 +149,27 @@ export function getColors(
 	return { color, gradient: strings as RoleColors['gradient'] }
 }
 
+/**
+ * Subscribes to guild member changes.
+ *
+ * @returns A function to unsubscribe.
+ */
+export function subscribeToMembers(callback: () => void) {
+	const store = getGuildMemberStore()
+	store.addChangeListener(callback)
+	return () => store.removeChangeListener(callback)
+}
+
+/**
+ * Asks Discord to load a guild member. Requests are batched and deduplicated by Discord.
+ */
+export function requestMember(guildId: string, userId: string) {
+	const store = Stores.GuildMemberRequesterStore as
+		| Store<{ requestMember?(guildId: string, userId: string): void }>
+		| undefined
+	store?.requestMember?.(guildId, userId)
+}
+
 export function getMember(
 	guildId: string | null | undefined,
 	userId: string | null | undefined,

@@ -1,7 +1,19 @@
-import { createContext, useContext } from 'react'
+import {
+	createContext,
+	useContext,
+	useEffect,
+	useSyncExternalStore,
+} from 'react'
 import { paintText } from './gradient'
 import { transformComponent } from './react'
-import { getGuildIdOfChannel, getMemberColors, getSetting } from './shared'
+import {
+	getColors,
+	getGuildIdOfChannel,
+	getMember,
+	getSetting,
+	requestMember,
+	subscribeToMembers,
+} from './shared'
 import type { ReactNode } from 'react'
 
 interface ReactionsContentProps {
@@ -24,7 +36,18 @@ const enabled = () => getSetting('reactorsList')
  */
 function useColoredTag(tree: ReactNode, { user }: DiscordTagProps) {
 	const guildId = useContext(ReactionsGuildContext)
-	const colors = getMemberColors(guildId, user?.id)
+	const userId = user?.id
+
+	// Most reactors aren't loaded yet, so the name is colored once its member arrives
+	const member = useSyncExternalStore(subscribeToMembers, () =>
+		getMember(guildId, userId),
+	)
+
+	useEffect(() => {
+		if (guildId && userId && !member) requestMember(guildId, userId)
+	}, [guildId, userId, member])
+
+	const colors = getColors(guildId, member)
 	return colors ? paintText(tree, colors) : tree
 }
 
