@@ -90,6 +90,27 @@ const getSelectedGuildStore = () =>
 		getGuildId(): string | null | undefined
 	}>
 
+const getSelectedChannelStore = () =>
+	Stores.SelectedChannelStore as Store<{
+		getVoiceChannelId(): string | null | undefined
+	}>
+
+const getChannelStore = () =>
+	Stores.ChannelStore as Store<{
+		getChannel(id: string): { guild_id?: string | null } | undefined
+	}>
+
+/**
+ * Returns the guild of the voice channel the user is connected to.
+ */
+export function getVoiceGuildId() {
+	const channelId = getSelectedChannelStore().getVoiceChannelId()
+	return (
+		(channelId && getChannelStore().getChannel(channelId)?.guild_id) ||
+		undefined
+	)
+}
+
 function hasEnhancedRoleColors(guildId: string) {
 	const features = getGuildStore().getGuild(guildId)?.features
 	return !!(

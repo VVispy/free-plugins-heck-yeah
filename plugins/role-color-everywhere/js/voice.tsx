@@ -1,7 +1,12 @@
 import { cloneElement, isValidElement } from 'react'
 import { paintText } from './gradient'
 import { transformComponent } from './react'
-import { getColors, getMemberColors, getSetting } from './shared'
+import {
+	getColors,
+	getMemberColors,
+	getSetting,
+	getVoiceGuildId,
+} from './shared'
 import type { ReactNode } from 'react'
 import type { Colored } from './shared'
 
@@ -13,6 +18,10 @@ interface VoiceUserNameProps {
 interface MemberRowProps {
 	guildId?: string | null
 	user?: { id: string } | null
+}
+
+interface ParticipantLabelProps {
+	participant?: { user?: { id: string } | null } | null
 }
 
 const enabled = () => getSetting('voiceUsers')
@@ -55,6 +64,22 @@ export function patchVoiceUsers(reportError: (e: unknown) => void) {
 				return colors
 					? cloneElement(tree, { label: paintText(tree.props.label, colors) })
 					: tree
+			},
+			reportError,
+		),
+		/**
+		 * Call grid tiles
+		 *
+		 * <FloatingParticipantLabel participant={...} label="name">
+		 *   ...
+		 *     <Text variant="heading-sm/semibold" color="text-overlay-light">name</Text>
+		 */
+		transformComponent<ParticipantLabelProps>(
+			'FloatingParticipantLabel',
+			enabled,
+			(tree, { participant }) => {
+				const colors = getMemberColors(getVoiceGuildId(), participant?.user?.id)
+				return colors ? paintText(tree, colors) : tree
 			},
 			reportError,
 		),
