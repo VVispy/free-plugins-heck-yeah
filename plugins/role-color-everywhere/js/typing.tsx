@@ -1,7 +1,7 @@
 import { Design } from '@valenced/discord/design'
 import { getModules } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
-import { after } from '@valenced/patcher'
+import { after, instead } from '@valenced/patcher'
 import { cloneElement, isValidElement } from 'react'
 import { paintInlineName } from './gradient'
 import { replaceElement, wrapComponent } from './react'
@@ -18,6 +18,11 @@ type RenderItem = (...args: unknown[]) => ReactNode
 interface TypingIndicatorModule {
 	default: { type: (...args: unknown[]) => ReactNode }
 	useTypingUserIdsForDisplay: unknown
+}
+
+interface CustomTypingIndicatorModule {
+	getViewableCustomTypingIndicatorConfig(...args: unknown[]): unknown
+	useCurrentCustomTypingIndicatorConfig: unknown
 }
 
 interface TypingTextProps {
@@ -82,8 +87,31 @@ export function patchTypingIndicator(reportError: (e: unknown) => void) {
 		{ max: 1 },
 	)
 
+	// Custom typing messages (Nitro) are shown as regular ones, so their names are colored too
+	const unsubscribeCustom = getModules(
+		withProps<CustomTypingIndicatorModule>(
+			'getViewableCustomTypingIndicatorConfig',
+			'useCurrentCustomTypingIndicatorConfig',
+		),
+		module => {
+			unpatches.push(
+				instead(
+					module,
+					'getViewableCustomTypingIndicatorConfig',
+					function (args, original) {
+						return getSetting('typingIndicator')
+							? null
+							: Reflect.apply(original, this, args)
+					},
+				),
+			)
+		},
+		{ max: 1 },
+	)
+
 	return () => {
 		unsubscribe()
+		unsubscribeCustom()
 		for (const unpatch of unpatches) unpatch()
 	}
 }

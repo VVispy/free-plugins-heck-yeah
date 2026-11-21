@@ -103,6 +103,40 @@ export function paintText(tree: ReactNode, colors: RoleColors) {
 
 const row = { flexDirection: 'row' } as const
 
+type DesignTextType = ComponentType<{
+	variant?: unknown
+	style?: unknown
+	children?: ReactNode
+}>
+
+interface InlineGradientProps {
+	gradient: NonNullable<RoleColors['gradient']>
+	name: ReactElement
+	variant: unknown
+	fallback: ReactElement
+}
+
+// Has to be its own component, a gradient placed directly inside a text collapses to nothing
+function InlineGradient({
+	gradient,
+	name,
+	variant,
+	fallback,
+}: InlineGradientProps) {
+	const { Text: DesignText } = Design as unknown as { Text: DesignTextType }
+
+	return (
+		renderGradient(
+			gradient,
+			<DesignText variant={variant}>{name}</DesignText>,
+			<DesignText variant={variant} style={hidden}>
+				{name}
+			</DesignText>,
+			row,
+		) ?? fallback
+	)
+}
+
 /**
  * Colors an inline name inside a `Design.Text` with the given variant.
  */
@@ -111,24 +145,18 @@ export function paintInlineName(
 	colors: RoleColors,
 	variant: unknown,
 ) {
-	const { Text: DesignText } = Design as unknown as {
-		Text: ComponentType<{
-			variant?: unknown
-			style?: unknown
-			children?: ReactNode
-		}>
-	}
+	const solid = cloneElement(name, {
+		style: [name.props.style, { color: colors.color }],
+	})
 
-	return (
-		(colors.gradient &&
-			renderGradient(
-				colors.gradient,
-				<DesignText variant={variant}>{name}</DesignText>,
-				<DesignText variant={variant} style={hidden}>
-					{name}
-				</DesignText>,
-				row,
-			)) ||
-		cloneElement(name, { style: [name.props.style, { color: colors.color }] })
+	return colors.gradient ? (
+		<InlineGradient
+			gradient={colors.gradient}
+			name={name}
+			variant={variant}
+			fallback={solid}
+		/>
+	) : (
+		solid
 	)
 }

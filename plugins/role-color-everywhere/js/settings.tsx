@@ -49,7 +49,7 @@ export default function SettingsComponent({
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="KeyboardIcon" />}
 							label="Typing indicator"
-							subLabel="Color the names of people who are typing."
+							subLabel="Color the names of people who are typing. Custom typing messages are shown as regular ones."
 							value={settings.typingIndicator}
 							onValueChange={typingIndicator =>
 								storage.set({ typingIndicator })
