@@ -5,11 +5,11 @@
   "plugins": {
     "wispy.role-color-everywhere": {
       "name": "Role Color Everywhere",
-      "description": "Shows the top role color, including gradients, in mentions, member list role headers, voice channels and the typing indicator.",
+      "description": "Shows the top role color, including gradients, in mentions, member list role headers, voice channels, the typing indicator and the reactions list.",
       "author": "Wispy (https://github.com/VVispy \"GitHub\")",
       "icon": "PaintPaletteIcon",
       "channels": {
-        "latest": "1.2.4"
+        "latest": "1.3.0"
       },
       "versions": {
         "1.0.0": {
@@ -94,6 +94,19 @@
           "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.2.4.zip",
           "sha256": "72c3f0288f90e64131aba9091f8f25368ff996ee27a906202a6e49100caefe96",
           "size": 4364,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.3.0": {
+          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.3.0.zip",
+          "sha256": "511e1ce3cfdb6d36d432ec3d3d11e69ede6f80aa79446549bc5b0c6f3e5edefb",
+          "size": 4527,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
