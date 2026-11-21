@@ -1,4 +1,5 @@
 import { patchMemberList } from './members'
+import { patchReactors } from './reactions'
 import { patchRows } from './rows'
 import SettingsComponent from './settings'
 import { DefaultSettings, setStorage } from './shared'
@@ -27,6 +28,7 @@ export default plugin<{ jsonStorage: Settings }>({
 			patchMemberList(reportError),
 			patchVoiceUsers(reportError),
 			patchTypingIndicator(reportError),
+			patchReactors(reportError),
 		)
 	},
 	SettingsComponent,

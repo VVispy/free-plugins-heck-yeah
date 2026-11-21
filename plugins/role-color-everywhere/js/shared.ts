@@ -6,6 +6,7 @@ export interface Settings {
 	chatMentions: boolean
 	memberList: boolean
 	voiceUsers: boolean
+	reactorsList: boolean
 	typingIndicator: boolean
 	/** Shows custom typing messages (Nitro) as regular ones */
 	regularTypingMessages: boolean
@@ -17,6 +18,7 @@ export const DefaultSettings: Settings = {
 	chatMentions: true,
 	memberList: true,
 	voiceUsers: true,
+	reactorsList: true,
 	typingIndicator: true,
 	regularTypingMessages: true,
 	gradients: true,
@@ -103,15 +105,18 @@ const getChannelStore = () =>
 		getChannel(id: string): { guild_id?: string | null } | undefined
 	}>
 
-/**
- * Returns the guild of the voice channel the user is connected to.
- */
-export function getVoiceGuildId() {
-	const channelId = getSelectedChannelStore().getVoiceChannelId()
+export function getGuildIdOfChannel(channelId: string | null | undefined) {
 	return (
 		(channelId && getChannelStore().getChannel(channelId)?.guild_id) ||
 		undefined
 	)
+}
+
+/**
+ * Returns the guild of the voice channel the user is connected to.
+ */
+export function getVoiceGuildId() {
+	return getGuildIdOfChannel(getSelectedChannelStore().getVoiceChannelId())
 }
 
 function hasEnhancedRoleColors(guildId: string) {

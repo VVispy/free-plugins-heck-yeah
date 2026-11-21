@@ -47,6 +47,13 @@ export default function SettingsComponent({
 							onValueChange={voiceUsers => storage.set({ voiceUsers })}
 						/>
 						<TableSwitchRow
+							icon={<TableRowAssetIcon name="ReactionIcon" />}
+							label="Reactions list"
+							subLabel="Color names in the list of people who reacted."
+							value={settings.reactorsList}
+							onValueChange={reactorsList => storage.set({ reactorsList })}
+						/>
+						<TableSwitchRow
 							icon={<TableRowAssetIcon name="KeyboardIcon" />}
 							label="Typing indicator"
 							subLabel="Color the names of people who are typing."
