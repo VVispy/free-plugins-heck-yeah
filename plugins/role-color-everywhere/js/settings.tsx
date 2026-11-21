@@ -49,12 +49,23 @@ export default function SettingsComponent({
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="KeyboardIcon" />}
 							label="Typing indicator"
-							subLabel="Color the names of people who are typing. Custom typing messages are shown as regular ones."
+							subLabel="Color the names of people who are typing."
 							value={settings.typingIndicator}
 							onValueChange={typingIndicator =>
 								storage.set({ typingIndicator })
 							}
 						/>
+						{settings.typingIndicator && (
+							<TableSwitchRow
+								icon={<TableRowAssetIcon name="NitroWheelIcon" />}
+								label="Regular typing messages"
+								subLabel="Show custom typing messages as regular ones. When off, names in custom messages are colored too."
+								value={settings.regularTypingMessages}
+								onValueChange={regularTypingMessages =>
+									storage.set({ regularTypingMessages })
+								}
+							/>
+						)}
 					</TableRowGroup>
 					<TableRowGroup title="Style" hasIcons>
 						<TableSwitchRow

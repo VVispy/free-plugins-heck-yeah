@@ -46,7 +46,7 @@ export function patchTypingIndicator(reportError: (e: unknown) => void) {
 		if (!getSetting('typingIndicator')) return tree
 
 		try {
-			return colorNames(tree, props)
+			return colorNames(tree, props, transform)
 		} catch (e) {
 			reportError(e)
 			return tree
@@ -87,7 +87,7 @@ export function patchTypingIndicator(reportError: (e: unknown) => void) {
 		{ max: 1 },
 	)
 
-	// Custom typing messages (Nitro) are shown as regular ones, so their names are colored too
+	// Shows custom typing messages (Nitro) as regular ones
 	const unsubscribeCustom = getModules(
 		withProps<CustomTypingIndicatorModule>(
 			'getViewableCustomTypingIndicatorConfig',
@@ -99,7 +99,8 @@ export function patchTypingIndicator(reportError: (e: unknown) => void) {
 					module,
 					'getViewableCustomTypingIndicatorConfig',
 					function (args, original) {
-						return getSetting('typingIndicator')
+						return getSetting('typingIndicator') &&
+							getSetting('regularTypingMessages')
 							? null
 							: Reflect.apply(original, this, args)
 					},
@@ -116,7 +117,26 @@ export function patchTypingIndicator(reportError: (e: unknown) => void) {
 	}
 }
 
-function colorNames(tree: ReactNode, { channel, typingUserIds }: TypingProps) {
+/**
+ * Users with a custom typing message get the text rendered inside this instead.
+ *
+ * <CustomTypingIndicatorDisplay config={...} username="A" onPress={...}>
+ *   <PressableOpacity>
+ *     <Stack>
+ *       <CustomTypingIndicatorGlyph config={...} />
+ *       <Text variant="text-xs/medium"><Text>A</Text>, " is vibing..."</Text>
+ */
+const isCustomTypingIndicator = (element: ReactElement<object>) =>
+	typeof element.type === 'function' &&
+	'config' in element.props &&
+	'username' in element.props
+
+function colorNames(
+	tree: ReactNode,
+	props: TypingProps,
+	transform: (tree: ReactNode, props: TypingProps) => ReactNode,
+): ReactNode {
+	const { channel, typingUserIds } = props
 	const guildId = channel?.guild_id
 	if (!guildId || !typingUserIds?.length) return tree
 
@@ -127,17 +147,36 @@ function colorNames(tree: ReactNode, { channel, typingUserIds }: TypingProps) {
 		element.props.children.filter(child => isValidElement(child)).length ===
 			typingUserIds.length
 
-	return replaceElement(tree, isTypingText, text => {
-		const { children, variant } = text.props as TypingTextProps
-		let index = 0
+	return replaceElement(
+		tree,
+		element => isTypingText(element) || isCustomTypingIndicator(element),
+		element => {
+			if (isCustomTypingIndicator(element)) {
+				const Custom = wrapComponent<TypingProps>(element.type, transform)
+				if (!Custom) return element
 
-		const parts = (children as ReactNode[]).map(child => {
-			if (!isValidElement<{ style?: unknown }>(child)) return child
+				// The extra props are only read by the wrapper
+				return (
+					<Custom
+						key={element.key}
+						{...element.props}
+						channel={channel}
+						typingUserIds={typingUserIds}
+					/>
+				)
+			}
 
-			const colors = getMemberColors(guildId, typingUserIds[index++])
-			return colors ? paintInlineName(child, colors, variant) : child
-		})
+			const { children, variant } = element.props as TypingTextProps
+			let index = 0
 
-		return cloneElement(text, undefined, ...parts)
-	})
+			const parts = (children as ReactNode[]).map(child => {
+				if (!isValidElement<{ style?: unknown }>(child)) return child
+
+				const colors = getMemberColors(guildId, typingUserIds[index++])
+				return colors ? paintInlineName(child, colors, variant) : child
+			})
+
+			return cloneElement(element, undefined, ...parts)
+		},
+	)
 }

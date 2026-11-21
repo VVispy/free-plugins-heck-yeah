@@ -7,6 +7,8 @@ export interface Settings {
 	memberList: boolean
 	voiceUsers: boolean
 	typingIndicator: boolean
+	/** Shows custom typing messages (Nitro) as regular ones */
+	regularTypingMessages: boolean
 	/** Gradients for roles with enhanced role colors */
 	gradients: boolean
 }
@@ -16,6 +18,7 @@ export const DefaultSettings: Settings = {
 	memberList: true,
 	voiceUsers: true,
 	typingIndicator: true,
+	regularTypingMessages: true,
 	gradients: true,
 }
 

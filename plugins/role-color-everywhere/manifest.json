@@ -5,7 +5,7 @@
 	"description": "Shows the top role color, including gradients, in mentions, member list role headers, voice channels and the typing indicator.",
 	"author": "Wispy (https://github.com/VVispy \"GitHub\")",
 	"icon": "PaintPaletteIcon",
-	"version": "1.2.3",
+	"version": "1.2.4",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"
