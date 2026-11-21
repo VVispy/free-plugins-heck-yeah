@@ -9,7 +9,7 @@
       "author": "Wispy (https://github.com/VVispy \"GitHub\")",
       "icon": "PaintPaletteIcon",
       "channels": {
-        "latest": "1.2.1"
+        "latest": "1.2.2"
       },
       "versions": {
         "1.0.0": {
@@ -55,6 +55,19 @@
           "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.2.1.zip",
           "sha256": "5d94d82fe80bf5acf9a0d497c91b5708606b4c63662a424cf9e5ff0fd19dcb68",
           "size": 3977,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.2.2": {
+          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.2.2.zip",
+          "sha256": "3f8006008834242b4ceb6d36d865fe6aaa589c10eed01910392752e5e7102420",
+          "size": 4069,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
