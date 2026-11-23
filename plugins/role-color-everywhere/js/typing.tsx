@@ -1,7 +1,7 @@
 import { Design } from '@valenced/discord/design'
 import { getModules } from '@valenced/modules/finders'
 import { withProps } from '@valenced/modules/finders/filters'
-import { after, instead } from '@valenced/patcher'
+import { after, HookPriority, instead } from '@valenced/patcher'
 import { cloneElement, isValidElement } from 'react'
 import { paintInlineName } from './gradient'
 import { replaceElement, wrapComponent } from './react'
@@ -58,30 +58,38 @@ export function patchTypingIndicator(reportError: (e: unknown) => void) {
 		withProps<TypingIndicatorModule>('useTypingUserIdsForDisplay'),
 		({ default: TypingIndicator }) => {
 			unpatches.push(
-				after(TypingIndicator, 'type', tree => {
-					const item = tree as ReactElement<{ renderItem?: RenderItem }>
-					const renderItem = item?.props?.renderItem
-					if (typeof renderItem !== 'function') return tree
+				after(
+					TypingIndicator,
+					'type',
+					tree => {
+						const item = tree as ReactElement<{ renderItem?: RenderItem }>
+						const renderItem = item?.props?.renderItem
+						if (typeof renderItem !== 'function') return tree
 
-					let patched = patchedRenderItems.get(renderItem)
-					if (!patched) {
-						patched = (...args) => {
-							const element = renderItem(...args)
-							if (!isValidElement<TypingProps>(element)) return element
+						let patched = patchedRenderItems.get(renderItem)
+						if (!patched) {
+							patched = (...args) => {
+								const element = renderItem(...args)
+								if (!isValidElement<TypingProps>(element)) return element
 
-							const Inner = wrapComponent<TypingProps>(element.type, transform)
-							return Inner ? (
-								<Inner key={element.key} {...element.props} />
-							) : (
-								element
-							)
+								const Inner = wrapComponent<TypingProps>(
+									element.type,
+									transform,
+								)
+								return Inner ? (
+									<Inner key={element.key} {...element.props} />
+								) : (
+									element
+								)
+							}
+							patchedRenderItems.set(renderItem, patched)
 						}
-						patchedRenderItems.set(renderItem, patched)
-					}
 
-					// The element may be cached, so it's never mutated
-					return cloneElement(item, { renderItem: patched })
-				}),
+						// The element may be cached, so it's never mutated
+						return cloneElement(item, { renderItem: patched })
+					},
+					{ priority: HookPriority.HIGH },
+				),
 			)
 		},
 		{ max: 1 },
@@ -141,15 +149,35 @@ function colorNames(
 	if (!guildId || !typingUserIds?.length) return tree
 
 	// "Several people are typing..." has no names to color
-	const isTypingText = (element: ReactElement<TypingTextProps>) =>
+	const isTypingText = (
+		element: unknown,
+	): element is ReactElement<TypingTextProps> =>
+		isValidElement<TypingTextProps>(element) &&
 		element.type === Design.Text &&
 		Array.isArray(element.props.children) &&
 		element.props.children.filter(child => isValidElement(child)).length ===
 			typingUserIds.length
 
+	const paintNames = (text: ReactElement<TypingTextProps>) => {
+		const { children, variant } = text.props
+		let index = 0
+
+		const parts = (children as ReactNode[]).map(child => {
+			if (!isValidElement<{ style?: unknown }>(child)) return child
+
+			const colors = getMemberColors(guildId, typingUserIds[index++])
+			return colors ? paintInlineName(child, colors, variant) : child
+		})
+
+		return cloneElement(text, undefined, ...parts)
+	}
+
 	return replaceElement(
 		tree,
-		element => isTypingText(element) || isCustomTypingIndicator(element),
+		element =>
+			isTypingText(element) ||
+			isTypingText(element.props.text) ||
+			isCustomTypingIndicator(element),
 		element => {
 			if (isCustomTypingIndicator(element)) {
 				const Custom = wrapComponent<TypingProps>(element.type, transform)
@@ -166,17 +194,9 @@ function colorNames(
 				)
 			}
 
-			const { children, variant } = element.props as TypingTextProps
-			let index = 0
-
-			const parts = (children as ReactNode[]).map(child => {
-				if (!isValidElement<{ style?: unknown }>(child)) return child
-
-				const colors = getMemberColors(guildId, typingUserIds[index++])
-				return colors ? paintInlineName(child, colors, variant) : child
-			})
-
-			return cloneElement(element, undefined, ...parts)
+			return isTypingText(element)
+				? paintNames(element)
+				: cloneElement(element, { text: paintNames(element.props.text) })
 		},
 	)
 }

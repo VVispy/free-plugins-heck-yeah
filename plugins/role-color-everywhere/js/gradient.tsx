@@ -114,6 +114,7 @@ interface InlineGradientProps {
 	name: ReactElement
 	variant: unknown
 	fallback: ReactElement
+	children?: ReactNode
 }
 
 // Has to be its own component, a gradient placed directly inside a text collapses to nothing
@@ -122,18 +123,22 @@ function InlineGradient({
 	name,
 	variant,
 	fallback,
+	children,
 }: InlineGradientProps) {
 	const { Text: DesignText } = Design as unknown as { Text: DesignTextType }
+	const rename = (element: ReactElement) =>
+		children == null ? element : cloneElement(element, undefined, children)
+	const label = rename(name)
 
 	return (
 		renderGradient(
 			gradient,
-			<DesignText variant={variant}>{name}</DesignText>,
+			<DesignText variant={variant}>{label}</DesignText>,
 			<DesignText variant={variant} style={hidden}>
-				{name}
+				{label}
 			</DesignText>,
 			row,
-		) ?? fallback
+		) ?? rename(fallback)
 	)
 }
 
