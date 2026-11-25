@@ -55,7 +55,7 @@ export default function SettingsComponent({
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="ChatIcon" />}
 							label="Chat mentions"
-							subLabel="Color user mentions in messages, replies and embeds."
+							subLabel="Color user mentions in messages, replies, and embeds."
 							value={settings.chatMentions}
 							onValueChange={chatMentions => storage.set({ chatMentions })}
 						/>
@@ -71,35 +71,35 @@ export default function SettingsComponent({
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="GroupIcon" />}
 							label="Member list"
-							subLabel="Color the role headers in the member list."
+							subLabel="Color role headers in the member list."
 							value={settings.memberList}
 							onValueChange={memberList => storage.set({ memberList })}
 						/>
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="PhoneCallIcon" />}
 							label="Voice users"
-							subLabel="Color the names of users in voice channels."
+							subLabel="Color user names in voice channels."
 							value={settings.voiceUsers}
 							onValueChange={voiceUsers => storage.set({ voiceUsers })}
 						/>
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="ReactionIcon" />}
 							label="Reactions list"
-							subLabel="Color names in the list of people who reacted."
+							subLabel="Color user names in the reactions list."
 							value={settings.reactorsList}
 							onValueChange={reactorsList => storage.set({ reactorsList })}
 						/>
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="PollsIcon" />}
 							label="Poll results"
-							subLabel="Color the names of voters in poll results."
+							subLabel="Color user names in poll results."
 							value={settings.pollResults}
 							onValueChange={pollResults => storage.set({ pollResults })}
 						/>
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="KeyboardIcon" />}
 							label="Typing indicator"
-							subLabel="Color the names of people who are typing."
+							subLabel="Color user names in the typing indicator."
 							value={settings.typingIndicator}
 							onValueChange={typingIndicator =>
 								storage.set({ typingIndicator })
@@ -109,7 +109,7 @@ export default function SettingsComponent({
 							<TableSwitchRow
 								icon={<TableRowAssetIcon name="NitroWheelIcon" />}
 								label="Regular typing messages"
-								subLabel="Show custom typing messages as regular ones. When off, names in custom messages are colored too."
+								subLabel="Show custom typing messages as regular ones. When off, user names in custom messages are colored too."
 								value={settings.regularTypingMessages}
 								onValueChange={regularTypingMessages =>
 									storage.set({ regularTypingMessages })
@@ -174,7 +174,7 @@ export default function SettingsComponent({
 						<TableSwitchRow
 							icon={<TableRowAssetIcon name="StarIcon" />}
 							label="Gradient role colors"
-							subLabel="Show gradients for roles with enhanced role colors, including names in chat. When off, the primary color is used."
+							subLabel="Show gradients for roles with enhanced role colors, including user names in chat. When off, the primary color is used."
 							value={settings.gradients}
 							onValueChange={gradients => storage.set({ gradients })}
 						/>

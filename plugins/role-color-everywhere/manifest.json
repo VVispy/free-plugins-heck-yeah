@@ -8,7 +8,7 @@
 		"Impala67 <791007955104432158> (https://github.com/saberofxebecc \"GitHub\")"
 	],
 	"icon": "PaintPaletteIcon",
-	"version": "1.4.1",
+	"version": "1.4.2",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"
