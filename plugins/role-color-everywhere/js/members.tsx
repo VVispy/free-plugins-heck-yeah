@@ -1,11 +1,34 @@
+import { Design } from '@valenced/discord/design'
+import { cloneElement } from 'react'
 import { paintText } from './gradient'
-import { transformComponent } from './react'
+import { replaceElement, transformComponent } from './react'
 import { getColors, getRoles, getSelectedGuildId, getSetting } from './shared'
 import type { Role } from './shared'
 
 interface UserSectionProps {
 	title?: unknown
 	guildId?: string
+}
+
+export const StockHeaderSizeIndex = 2
+
+export const HeaderSizeLabels = [
+	'Ant-Sized',
+	'Squintable',
+	'Stock',
+	'Big',
+	'Overcompensating',
+] as const
+
+const HeaderSizeStyles: Record<
+	number,
+	{ fontSize: number; lineHeight: number } | undefined
+> = {
+	0: { fontSize: 12, lineHeight: 16 },
+	1: { fontSize: 14, lineHeight: 18 },
+	2: undefined,
+	3: { fontSize: 18, lineHeight: 24 },
+	4: { fontSize: 22, lineHeight: 28 },
 }
 
 // Trailing member count, like "Moderator — 12"
@@ -26,8 +49,22 @@ export function patchMemberList(reportError: (e: unknown) => void) {
 		(tree, { title, guildId = getSelectedGuildId() }) => {
 			if (typeof title !== 'string' || !guildId) return tree
 
+			const sizeStyle = HeaderSizeStyles[getSetting('memberListHeaderSize')]
+			const weightStyle = getSetting('memberListBoldHeaders')
+				? ({ fontWeight: 'bold' } as const)
+				: ({ fontWeight: 'normal' } as const)
+
+			const styledTree = replaceElement(
+				tree,
+				element => element.type === Design.Text,
+				text =>
+					cloneElement(text, {
+						style: [text.props?.style, sizeStyle, weightStyle],
+					}),
+			)
+
 			const colors = getColors(guildId, findRole(guildId, title))
-			return colors ? paintText(tree, colors) : tree
+			return colors ? paintText(styledTree, colors) : styledTree
 		},
 		reportError,
 	)

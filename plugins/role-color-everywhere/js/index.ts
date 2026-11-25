@@ -1,4 +1,6 @@
+import { patchMentionAutocomplete } from './autocomplete'
 import { patchMemberList } from './members'
+import { patchPollResults } from './polls'
 import { patchReactors } from './reactions'
 import { patchRows } from './rows'
 import SettingsComponent from './settings'
@@ -25,10 +27,12 @@ export default plugin<{ jsonStorage: Settings }>({
 		cleanup(
 			() => setStorage(undefined),
 			patchRows(reportError),
+			patchMentionAutocomplete(reportError),
 			patchMemberList(reportError),
 			patchVoiceUsers(reportError),
 			patchTypingIndicator(reportError),
 			patchReactors(reportError),
+			patchPollResults(reportError),
 		)
 	},
 	SettingsComponent,

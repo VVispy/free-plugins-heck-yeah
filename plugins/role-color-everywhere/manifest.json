@@ -2,10 +2,13 @@
 	"format": 1,
 	"id": "wispy.role-color-everywhere",
 	"name": "Role Color Everywhere",
-	"description": "Shows the top role color, including gradients, in mentions, member list role headers, voice channels, the typing indicator and the reactions list.",
-	"author": "Wispy (https://github.com/VVispy \"GitHub\")",
+	"description": "Shows the top role color, including gradients, in mentions, mention autocomplete, member list role headers, voice channels, the typing indicator, the reactions list and poll results.",
+	"author": "Wispy <481311394688532501>",
+	"contributors": [
+		"Impala67 <791007955104432158> (https://github.com/saberofxebecc \"GitHub\")"
+	],
 	"icon": "PaintPaletteIcon",
-	"version": "1.3.3",
+	"version": "1.4.0",
 	"dependencies": {
 		"valenced.api": {
 			"version": ">=1 <2"

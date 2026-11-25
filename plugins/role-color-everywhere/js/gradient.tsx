@@ -3,7 +3,7 @@ import { lookupModule } from '@valenced/modules/finders'
 import { withName, withProps } from '@valenced/modules/finders/filters'
 import { cloneElement, isValidElement } from 'react'
 import { I18nManager, StyleSheet, Text, View } from 'react-native'
-import { replaceElement } from './react'
+import { replaceElement, wrapComponent } from './react'
 import type { ComponentType, ReactElement, ReactNode } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import type { RoleColors } from './shared'
@@ -149,6 +149,12 @@ function renderGradient(
 	)
 }
 
+const labelRow = {
+	flexDirection: 'row',
+	alignItems: 'center',
+	flexShrink: 1,
+} as const
+
 /**
  * Colors the first `Design.Text` in a tree.
  * Its `color` prop only takes theme tokens, so a nested text carries solid colors.
@@ -182,6 +188,198 @@ export function paintText(tree: ReactNode, colors: RoleColors) {
 			)
 		},
 	)
+}
+
+export function paintAnyText(
+	tree: ReactNode,
+	colors: RoleColors,
+	wrapTopLevelGradient = false,
+): ReactNode {
+	const wrap = (painted: ReactNode) =>
+		wrapTopLevelGradient &&
+		colors.gradient &&
+		isValidElement(tree) &&
+		(tree.type === Design.Text || tree.type === Text) ? (
+			<View style={labelRow}>{painted}</View>
+		) : (
+			painted
+		)
+
+	const designPainted = paintText(tree, colors)
+	if (designPainted !== tree) return wrap(designPainted)
+
+	const rnPainted = replaceElement(
+		tree,
+		element => element.type === Text,
+		text => {
+			const { children, style } = text.props as {
+				children?: ReactNode
+				style?: unknown
+			}
+			const emojis = hasEmojis(children)
+
+			return (
+				(colors.gradient &&
+					renderGradient(
+						colors.gradient,
+						emojis ? withoutEmojis(text) : text,
+						cloneElement(text, { style: [style, hidden] }),
+						undefined,
+						emojis && onlyEmojis(text),
+					)) ||
+				cloneElement(text, { style: [style, { color: colors.color }] })
+			)
+		},
+	)
+
+	return rnPainted !== tree ? wrap(rnPainted) : tree
+}
+
+type LabelVariant = 'text-md/semibold' | 'text-sm/normal'
+
+export function paintRowLabel(
+	label: string,
+	colors: RoleColors,
+	variant: LabelVariant = 'text-md/semibold',
+): ReactNode {
+	const painted = paintText(
+		<Design.Text variant={variant} numberOfLines={1}>
+			{label}
+		</Design.Text>,
+		colors,
+	)
+
+	return colors.gradient ? <View style={labelRow}>{painted}</View> : painted
+}
+
+interface LabelWrapperProps {
+	__rceColors?: RoleColors
+	__rceDepth?: number
+	__rceSubLabel?: boolean
+	__rceVariant?: LabelVariant
+	[key: string]: unknown
+}
+
+function applyLabelColor(
+	rendered: ReactNode,
+	props: LabelWrapperProps,
+): ReactNode {
+	const colors = props.__rceColors
+	if (!colors || !rendered) return rendered
+
+	return paintLabel(rendered, colors, props.__rceDepth ?? 1, props.__rceVariant)
+}
+
+function paintLabel(
+	label: ReactNode,
+	colors: RoleColors,
+	depth = 0,
+	variant: LabelVariant = 'text-md/semibold',
+): ReactNode {
+	if (typeof label === 'string') return paintRowLabel(label, colors, variant)
+
+	if (Array.isArray(label)) {
+		for (let i = 0; i < label.length; i++) {
+			const child = label[i]
+			if (child == null || typeof child === 'boolean') continue
+			if (typeof child === 'string' && !child.trim()) continue
+
+			const painted = paintLabel(child, colors, depth, variant)
+			if (painted === child) continue
+
+			const copy = label.slice()
+			copy[i] = painted
+			return copy
+		}
+		return label
+	}
+
+	const painted = paintAnyText(label, colors, true)
+	if (painted !== label || depth >= 4) return painted
+
+	return replaceElement(
+		label,
+		element => wrapComponent(element.type, applyLabelColor) != null,
+		element => {
+			const Wrapped = wrapComponent<LabelWrapperProps>(
+				element.type,
+				applyLabelColor,
+			)!
+			return (
+				<Wrapped
+					key={element.key}
+					{...element.props}
+					__rceColors={colors}
+					__rceDepth={depth + 1}
+					__rceVariant={variant}
+				/>
+			)
+		},
+	)
+}
+
+function applyRowColor(
+	rendered: ReactNode,
+	props: LabelWrapperProps,
+): ReactNode {
+	const colors = props.__rceColors
+	if (!colors || !rendered) return rendered
+
+	return paintRowTree(
+		rendered,
+		colors,
+		props.__rceSubLabel ?? false,
+		props.__rceDepth ?? 1,
+	)
+}
+
+export function paintRowTree(
+	tree: ReactNode,
+	colors: RoleColors,
+	includeSubLabel = false,
+	depth = 0,
+): ReactNode {
+	let matched = false
+	const withLabel = replaceElement(
+		tree,
+		element => element.props != null && 'label' in element.props,
+		element => {
+			matched = true
+			const nextProps: Record<string, ReactNode> = {
+				label: paintLabel(element.props.label, colors),
+			}
+			if (includeSubLabel && element.props.subLabel != null) {
+				nextProps.subLabel = paintLabel(
+					element.props.subLabel,
+					colors,
+					0,
+					'text-sm/normal',
+				)
+			}
+			return cloneElement(element, nextProps)
+		},
+	)
+	if (matched) return withLabel
+
+	const painted = paintAnyText(tree, colors)
+	if (painted !== tree || depth >= 4) return painted
+
+	if (isValidElement<Record<string, unknown>>(tree)) {
+		const Wrapped = wrapComponent<LabelWrapperProps>(tree.type, applyRowColor)
+		if (Wrapped) {
+			return (
+				<Wrapped
+					key={tree.key}
+					{...tree.props}
+					__rceColors={colors}
+					__rceDepth={depth + 1}
+					__rceSubLabel={includeSubLabel}
+				/>
+			)
+		}
+	}
+
+	return tree
 }
 
 const row = { flexDirection: 'row' } as const

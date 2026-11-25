@@ -1,7 +1,7 @@
 import { instead } from '@valenced/patcher'
 import { ReactJSXRuntime } from '@valenced/react'
 import { beforeJSX } from '@valenced/react/jsx-runtime'
-import { cloneElement, isValidElement, memo } from 'react'
+import { cloneElement, forwardRef, isValidElement, memo } from 'react'
 import type {
 	ComponentType,
 	ElementType,
@@ -16,13 +16,24 @@ type JSXFactory = (type: unknown, props: unknown, key?: unknown) => unknown
  * Returns the name of a function, memo or forwardRef component.
  */
 export function componentName(type: unknown): string | undefined {
-	if (typeof type === 'function') return type.name
+	if (typeof type === 'function')
+		return (
+			(type as { displayName?: string }).displayName || type.name || undefined
+		)
 	if (typeof type !== 'object' || type === null) return
 
-	const inner =
-		(type as { type?: unknown; render?: unknown }).type ??
-		(type as { render?: unknown }).render
-	return typeof inner === 'function' ? inner.name : componentName(inner)
+	const obj = type as {
+		displayName?: string
+		type?: unknown
+		render?: unknown
+	}
+	if (typeof obj.displayName === 'string' && obj.displayName.length > 0)
+		return obj.displayName
+
+	const inner = obj.type ?? obj.render
+	return typeof inner === 'function'
+		? (inner as { displayName?: string }).displayName || inner.name || undefined
+		: componentName(inner)
 }
 
 const waiting = new Map<string, Set<(type: ElementType) => void>>()
@@ -132,7 +143,7 @@ export function replaceElement(
 const wrapped = new WeakMap<object, WeakMap<object, ComponentType<any>>>()
 
 /**
- * Wraps a function or memo component to transform its output.
+ * Wraps a function, memo or forwardRef component to transform its output.
  * The wrapper is cached per transform, so React never remounts it. Memo components stay memoized.
  */
 export function wrapComponent<P extends object>(
@@ -142,24 +153,103 @@ export function wrapComponent<P extends object>(
 	if (typeof type !== 'function' && (typeof type !== 'object' || type === null))
 		return
 
-	const memoized = typeof type === 'object'
-	const render = memoized ? (type as { type?: unknown }).type : type
-	if (typeof render !== 'function') return
-
 	let cache = wrapped.get(transform)
 	if (!cache) wrapped.set(transform, (cache = new WeakMap()))
 
 	let Wrapped = cache.get(type)
-	if (!Wrapped) {
-		const Render = (props: P) =>
-			transform((render as FC<P>)(props) as ReactNode, props)
-		Wrapped = memoized
-			? memo(Render, (type as { compare?: Parameters<typeof memo>[1] }).compare)
-			: Render
-		cache.set(type, Wrapped)
+	if (Wrapped) return Wrapped
+
+	if (typeof type === 'function') {
+		Wrapped = (props: P) =>
+			transform((type as FC<P>)(props) as ReactNode, props)
+	} else {
+		const obj = type as {
+			type?: unknown
+			render?: (props: P, ref: unknown) => ReactNode
+			compare?: Parameters<typeof memo>[1]
+		}
+		if (typeof obj.type === 'function') {
+			const render = obj.type as FC<P>
+			const Render = (props: P) => transform(render(props) as ReactNode, props)
+			Wrapped = memo(Render, obj.compare)
+		} else if (typeof obj.render === 'function') {
+			const render = obj.render
+			Wrapped = forwardRef((props, ref) =>
+				transform(render(props as P, ref), props as P),
+			) as unknown as ComponentType<P>
+		} else if (
+			typeof obj.type === 'object' &&
+			obj.type !== null &&
+			typeof (obj.type as { render?: unknown }).render === 'function'
+		) {
+			const render = (
+				obj.type as { render: (props: P, ref: unknown) => ReactNode }
+			).render
+			const Forwarded = forwardRef((props, ref) =>
+				transform(render(props as P, ref), props as P),
+			)
+			Wrapped = memo(Forwarded, obj.compare) as unknown as ComponentType<P>
+		} else {
+			return
+		}
 	}
 
+	cache.set(type, Wrapped)
 	return Wrapped
+}
+
+export function mapElements(
+	tree: ReactNode,
+	mapper: (element: ReactElement<any>) => ReactElement<any>,
+	maxDepth = 8,
+	depth = 0,
+): ReactNode {
+	if (depth > maxDepth) return tree
+
+	if (Array.isArray(tree)) {
+		let changed = false
+		const next = tree.map(child => {
+			const mapped = mapElements(child, mapper, maxDepth, depth)
+			if (mapped !== child) changed = true
+			return mapped
+		})
+		return changed ? next : tree
+	}
+
+	if (!isValidElement<{ children?: ReactNode }>(tree)) return tree
+
+	const current = mapper(tree)
+	const { children } = current.props as { children?: ReactNode }
+	if (children == null) return current
+
+	const mappedChildren = mapElements(children, mapper, maxDepth, depth + 1)
+	if (mappedChildren === children) return current
+
+	return Array.isArray(mappedChildren)
+		? cloneElement(current, undefined, ...mappedChildren)
+		: cloneElement(current, undefined, mappedChildren)
+}
+
+export function wrapListRenderItem(
+	tree: ReactNode,
+	transformItem: (rendered: ReactNode, info: any) => ReactNode,
+	maxDepth = 6,
+): ReactNode {
+	return mapElements(
+		tree,
+		element => {
+			const renderItem = element.props?.renderItem
+			if (typeof renderItem !== 'function' || renderItem.__rceWrapped)
+				return element
+
+			const wrappedRenderItem = Object.assign(
+				(info: any) => transformItem(renderItem(info), info),
+				{ __rceWrapped: true },
+			)
+			return cloneElement(element, { renderItem: wrappedRenderItem })
+		},
+		maxDepth,
+	)
 }
 
 /**
