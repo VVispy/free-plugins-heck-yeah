@@ -186,8 +186,8 @@
         },
         "1.4.2": {
           "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.4.2.zip",
-          "sha256": "5aec55011bebbbac154797f0b5dc75979f8a4bb9fb237294f195660c4a4d3b5f",
-          "size": 8802,
+          "sha256": "e6eeda3d6b71e72ca9538b936723f7a8860e5345e3d77cd109ca48e2726f779f",
+          "size": 8839,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
