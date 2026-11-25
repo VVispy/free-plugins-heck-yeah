@@ -242,10 +242,11 @@ export function paintRowLabel(
 	colors: RoleColors,
 	variant: LabelVariant = 'text-md/semibold',
 ): ReactNode {
+	const { Text: DesignText } = Design
 	const painted = paintText(
-		<Design.Text variant={variant} numberOfLines={1}>
+		<DesignText variant={variant} numberOfLines={1}>
 			{label}
-		</Design.Text>,
+		</DesignText>,
 		colors,
 	)
 
