@@ -1,8 +1,35 @@
 {
   "format": 1,
-  "name": "Wispy's Plugins",
-  "description": "Valenced plugins by Wispy.",
+  "name": "Free Plugins Heck Yeah",
+  "description": "Plugins for Valenced.",
   "plugins": {
+    "dev.free-plugins-heck-yeah.irc-colors": {
+      "name": "IRC Colors",
+      "description": "Assigns deterministic IRC-style username colors in DMs, servers, and the member list.",
+      "author": "Impala67 <791007955104432158> (https://github.com/saberofxebecc \"GitHub\")",
+      "contributors": [
+        "Wispy <481311394688532501> (https://github.com/VVispy \"GitHub\")"
+      ],
+      "icon": "BurgerIcon",
+      "channels": {
+        "latest": "1.2.4"
+      },
+      "versions": {
+        "1.2.4": {
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/dev.free-plugins-heck-yeah.irc-colors@1.2.4.zip",
+          "sha256": "5b5d22b6b442f631e22f656fb633baade01527d70b880daf5b166202231c1fd6",
+          "size": 10421,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "wispy.role-color-everywhere": {
       "name": "Role Color Everywhere",
       "description": "Shows the top role color, including gradients, in mentions, mention autocomplete, member list role headers, voice channels, the typing indicator, the reactions list and poll results.",
@@ -16,7 +43,7 @@
       },
       "versions": {
         "1.0.0": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.0.0.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.0.0.zip",
           "sha256": "49004240d6f894a35a04c6a478615e4ac46585478470f5edb480eb183b9ac65c",
           "size": 4248,
           "dependencies": {
@@ -29,7 +56,7 @@
           }
         },
         "1.1.0": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.1.0.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.1.0.zip",
           "sha256": "54ad8b7c57020fdcbbada876ab224772b5478e01928c2ad8ce8bcf7a49ece2dd",
           "size": 5132,
           "dependencies": {
@@ -42,7 +69,7 @@
           }
         },
         "1.2.0": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.2.0.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.2.0.zip",
           "sha256": "e732da3bcfce57beab2801ed6186df2549cde296af2d7c1a0d42ddbe28cae9f1",
           "size": 4040,
           "dependencies": {
@@ -55,7 +82,7 @@
           }
         },
         "1.2.1": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.2.1.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.2.1.zip",
           "sha256": "5d94d82fe80bf5acf9a0d497c91b5708606b4c63662a424cf9e5ff0fd19dcb68",
           "size": 3977,
           "dependencies": {
@@ -68,7 +95,7 @@
           }
         },
         "1.2.2": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.2.2.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.2.2.zip",
           "sha256": "3f8006008834242b4ceb6d36d865fe6aaa589c10eed01910392752e5e7102420",
           "size": 4069,
           "dependencies": {
@@ -81,7 +108,7 @@
           }
         },
         "1.2.3": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.2.3.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.2.3.zip",
           "sha256": "1875f6979ae964e6f6c104297639b882152f5842f956f30b229ffdadae51fd6f",
           "size": 4206,
           "dependencies": {
@@ -94,7 +121,7 @@
           }
         },
         "1.2.4": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.2.4.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.2.4.zip",
           "sha256": "72c3f0288f90e64131aba9091f8f25368ff996ee27a906202a6e49100caefe96",
           "size": 4364,
           "dependencies": {
@@ -107,7 +134,7 @@
           }
         },
         "1.3.0": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.3.0.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.3.0.zip",
           "sha256": "511e1ce3cfdb6d36d432ec3d3d11e69ede6f80aa79446549bc5b0c6f3e5edefb",
           "size": 4527,
           "dependencies": {
@@ -120,7 +147,7 @@
           }
         },
         "1.3.1": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.3.1.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.3.1.zip",
           "sha256": "0464e8ee66e55aa50ec5eaee0bc2bd4ca5c25cf6a5e3b82efe99378f73405894",
           "size": 4650,
           "dependencies": {
@@ -133,7 +160,7 @@
           }
         },
         "1.3.2": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.3.2.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.3.2.zip",
           "sha256": "f6feda858ee2308dc09f455e97701251245833a79bbe6466852f791be8e68c94",
           "size": 4731,
           "dependencies": {
@@ -146,7 +173,7 @@
           }
         },
         "1.3.3": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.3.3.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.3.3.zip",
           "sha256": "08d7adf97eb3bcd2d923bde5a1819392027a5e45c8bd86651d666b6acc4dfb96",
           "size": 5862,
           "dependencies": {
@@ -159,7 +186,7 @@
           }
         },
         "1.4.0": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.4.0.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.4.0.zip",
           "sha256": "9515445cc7ca5fad801744f9b48c7d7197673b74503ad34760e2ade5da8479cd",
           "size": 8824,
           "dependencies": {
@@ -172,7 +199,7 @@
           }
         },
         "1.4.1": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.4.1.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.4.1.zip",
           "sha256": "17bca8ae69160fd934b02df53ddc5ddc758f902289ae0e8434aa235be3adad0f",
           "size": 8831,
           "dependencies": {
@@ -185,7 +212,7 @@
           }
         },
         "1.4.2": {
-          "url": "https://vvispy.github.io/valenced-plugin-wispy/pool/wispy.role-color-everywhere@1.4.2.zip",
+          "url": "https://vvispy.github.io/free-plugins-heck-yeah/pool/wispy.role-color-everywhere@1.4.2.zip",
           "sha256": "e6eeda3d6b71e72ca9538b936723f7a8860e5345e3d77cd109ca48e2726f779f",
           "size": 8839,
           "dependencies": {
